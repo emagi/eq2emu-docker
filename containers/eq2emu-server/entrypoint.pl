@@ -137,6 +137,8 @@ else {
 		print "$mkcertfile";
 		qx{mv -f webserver+3.pem /eq2emu/certs/webcert.pem};
 		qx{mv -f webserver+3-key.pem /eq2emu/certs/webkey.pem};
+		qx{sudo chown eq2emu:eq2emu /eq2emu/certs/};
+		qx{sudo chmod 644 /eq2emu/certs/*};
 		qx{rm /eq2emu/startup.sql};
 		my $tables = "CREATE DATABASE IF NOT EXISTS " . $EQ2LS_DB_NAME . ";\nCREATE DATABASE IF NOT EXISTS " . $EQ2DAWN_DB_NAME . ";\n";
 		my $users = 'CREATE USER IF NOT EXISTS \'' . $EQ2DAWN_DB_USER . '\'@\'%\' IDENTIFIED BY \'' . $EQ2DAWN_DB_PASSWORD . "';\nCREATE USER IF NOT EXISTS \'" . $EQ2LS_DB_USER . '\'@\'%\' IDENTIFIED BY \'' . $EQ2LS_DB_PASSWORD . "';\n";
