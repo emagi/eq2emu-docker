@@ -1,0 +1,139 @@
+networks:
+  backend:
+    driver: ${NETWORKS_DRIVER}
+
+services:
+
+  #############################################
+  # mysql
+  #############################################
+
+  mysql:
+    image: mariadb:lts-ubi9
+    restart: unless-stopped
+    # if you do not wish to expose mysql to host or outside, then remove the ports and - 3306:3306 line.
+    # if you otherwise wish to have the host exposed port changed, modify - 3306:3306 to be - exposed_port:3306
+    ports:
+      - 3306:3306
+    volumes:
+      - ./data:/var/lib/mysql
+      - ./certs:/etc/mysql/certs
+    environment:
+      - MARIADB_DATABASE=${MARIADB_DATABASE}
+      - MARIADB_USER=${MARIADB_USER}
+      - MARIADB_PASSWORD=${MARIADB_PASSWORD}
+      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
+      - MARIADB_ALLOW_EMPTY_PASSWORD=NO
+      - TZ=${TZ:-US/Central}
+    command:
+      - --ssl-ca=/etc/mysql/certs/ca.crt
+      - --ssl-cert=/etc/mysql/certs/mysql.crt
+      - --ssl-key=/etc/mysql/certs/mysql.key
+      - --ssl=1
+      - --bind-address=0.0.0.0
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u", "root", "-p${MARIADB_ROOT_PASSWORD}"]
+      timeout: 5s
+      retries: 10
+    networks:
+      - backend
+  cert-gen:
+    image: alpine
+    volumes:
+      - ./certs:/certs
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        apk add --no-cache openssl &&
+        openssl genpkey -algorithm RSA -out /certs/mysql.key -pkeyopt rsa_keygen_bits:2048 &&
+        openssl req -new -key /certs/mysql.key -out /certs/mysql.csr -subj "/CN=mysql/O=myorg/C=US" &&
+        openssl x509 -req -in /certs/mysql.csr -signkey /certs/mysql.key -out /certs/mysql.crt -days 365 &&
+        openssl genpkey -algorithm RSA -out /certs/ca.key -pkeyopt rsa_keygen_bits:2048 &&
+        openssl req -new -x509 -key /certs/ca.key -out /certs/ca.crt -days 1095 -subj "/CN=Certificate Authority/O=myorg/C=US" &&
+        chmod 600 /certs/* && chown 999:999 /certs/*
+    restart: "no"
+  #############################################
+  # eq2emu server
+  #############################################
+
+  eq2emu-server:
+    restart: unless-stopped
+    build:
+      context: ./containers/eq2emu-server
+    image: emagieq2/eq2emu-server:latest
+    volumes:
+      - ./certs:/eq2emu/certs
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - ${LISTEN_PORT_ADDRESS}:${WORLD_CLIENT_PORT}:${WORLD_CLIENT_PORT}/udp
+      - ${LISTEN_PORT_ADDRESS}:${LOGIN_CLIENT_PORT}:${LOGIN_CLIENT_PORT}/udp
+      - ${LISTEN_PORT_ADDRESS}:${WEB_SERVER_PORT}:${WEB_SERVER_PORT}/tcp
+    environment:
+      - EQ2EMU_DB_PASSWORD=${MARIADB_PASSWORD}
+      - EQ2EMU_EDITOR_PASSWORD=${EQ2EMU_EDITOR_PASSWORD}
+      - MYSQL_DATABASE=${MARIADB_DATABASE}
+      - MYSQL_USER=${MARIADB_USER}
+      - MYSQL_PASSWORD=${MARIADB_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
+      - MYSQL_HOST=${MYSQL_HOST}
+      - EQ2DAWN_DB_USER=${EQ2DAWN_DB_USER}
+      - EQ2DAWN_DB_PASSWORD=${EQ2DAWN_DB_PASSWORD}
+      - EQ2DAWN_ADMIN_PASSWORD=${EQ2DAWN_ADMIN_PASSWORD}
+      - EQ2LS_DB_PASSWORD=${EQ2LS_DB_PASSWORD}
+      - IP_ADDRESS=${IP_ADDRESS}
+      - WORLD_WEBPORT=${WORLD_WEBPORT}
+      - LOGIN_WEBPORT=${LOGIN_WEBPORT}
+      - WEB_CERTFILE=${WEB_CERTFILE}
+      - WEB_KEYFILE=${WEB_KEYFILE}
+      - WEB_CAFILE=${WEB_CAFILE}
+      - WORLD_CLIENT_PORT=${WORLD_CLIENT_PORT}
+      - LOGIN_CLIENT_PORT=${LOGIN_CLIENT_PORT}
+      - WEB_SERVER_PORT=${WEB_SERVER_PORT}
+      - WORLD_NAME=${WORLD_NAME}
+      - WORLD_ACCOUNT_NAME=${WORLD_ACCOUNT_NAME}
+      - WORLD_ACCOUNT_PASSWORD=${WORLD_ACCOUNT_PASSWORD}
+      - EQ2WORLD_DB_PKG:${EQ2WORLD_DB_PKG}
+      - EQ2WORLD_DB_FILE:${EQ2WORLD_DB_FILE}
+      - EQ2WORLD_DB_SQL:${EQ2WORLD_DB_SQL}
+      - EQ2LOGIN_DB_PKG:${EQ2LOGIN_DB_PKG}
+      - EQ2LOGIN_DB_FILE:${EQ2LOGIN_DB_FILE}
+      - EQ2LOGIN_DB_SQL:${EQ2LOGIN_DB_SQL}
+      - EQ2DAWN_AUTORESTART_SERVER:${EQ2DAWN_AUTORESTART_SERVER}
+      - EQ2WORLD_WEB_ADMIN:${EQ2WORLD_WEB_ADMIN}
+      - EQ2WORLD_WEB_PASSWORD:${EQ2WORLD_WEB_PASSWORD}
+      - EQ2LOGIN_WEB_ADMIN:${EQ2LOGIN_WEB_ADMIN}
+      - EQ2LOGIN_WEB_PASSWORD:${EQ2LOGIN_WEB_PASSWORD}
+      - EQ2LS_DB_NAME:${EQ2LS_DB_NAME}
+      - MKCERT_URL:${MKCERT_URL}
+      - MKCERT_FILE:${MKCERT_FILE}
+      - TZ=${TZ:-US/Central}
+    tty: true
+    stdin_open: true
+    networks:
+      - backend
+    cpu_shares: 900
+
+  #############################################
+  # eq2emu editor
+  #############################################
+
+#  eq2emu-editor:
+#    image: emagi/eq2emu-editor:latest
+#    restart: unless-stopped
+#    build:
+#      context: ./containers/eq2emu-editor
+#    ports:
+#      - ${IP_ADDRESS}:80:80
+#    volumes:
+#      - ${DATA_PATH_HOST}/eq2emu-editor:/var/www/html
+#    environment:
+#      DB_HOST: mariadb
+#      DB_NAME: ${MARIADB_DATABASE}
+#      DB_USER: ${MARIADB_USER}
+#      DB_PASSWORD: ${MARIADB_PASSWORD}
+#      TZ: ${TZ:-US/Central}
+#    networks:
+#      - backend
