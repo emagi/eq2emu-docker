@@ -101,7 +101,7 @@ RUN apt-get update -yqq && \
     useradd -u ${PUID} -g eq2emu -m eq2emu -G eq2emu && \
     usermod -p "*" eq2emu
 
-RUN apt-get -y update && apt-get install -y npm nano nodejs git libnss3-tools screen jq make mariadb-client automake sudo g++ libsdl2-dev libmariadb-dev libboost-all-dev libreadline-dev cmake liblua5.3-dev lua5.3 libcrypto++-dev wget libglfw3-dev libgl1-mesa-dev libglu1-mesa-dev libglm-dev
+RUN apt-get -y update && apt-get install -y npm nano nodejs git libnss3-tools screen jq make mariadb-client automake sudo g++ libsdl2-dev libmariadb-dev libboost-all-dev libreadline-dev cmake liblua5.4-dev lua5.4 libcrypto++-dev wget libglfw3-dev libgl1-mesa-dev libglu1-mesa-dev libglm-dev
 
 RUN echo "eq2emu ALL=(root) NOPASSWD:ALL" > /etc/sudoers.d/user && \
     chmod 0440 /etc/sudoers.d/user
