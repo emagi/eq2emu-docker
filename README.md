@@ -21,4 +21,7 @@
 4. Issue 'docker compose up'
 5. A number of images will download to make the full server, this can take some time depending on your connection.
 6. After about 1-2 minutes, eq2emu-server should appear on the prompt, briefly after you should be able to access https://127.0.0.1:2424/ for the admin interface, enter the EQ2DAWN_ADMIN_PASSWORD supplied in the .env file.
-6. Use your compatible EverQuest 2 client to login by updating eq2_default.ini to us cl_ls_address 127.0.0.1
+7. Use your compatible EverQuest 2 client to login by updating eq2_default.ini to us cl_ls_address 127.0.0.1
+
+Additional Notes:
+- http://127.0.0.1/eq2db2 will allow access to the EQ2EMu DB Editor, default user is 'admin' with the password EQ2EDITOR_ADMIN_PASSWORD set in the .env file.
