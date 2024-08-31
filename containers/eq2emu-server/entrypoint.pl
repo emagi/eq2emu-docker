@@ -43,7 +43,15 @@ my $EQ2LOGIN_WEB_ADMIN = $ENV{'EQ2LOGIN_WEB_ADMIN'};
 my $EQ2LOGIN_WEB_PASSWORD = $ENV{'EQ2LOGIN_WEB_PASSWORD'};
 
 my $MYSQL_ROOT_PASSWORD = $ENV{'MYSQL_ROOT_PASSWORD'};
-	
+
+my $EQ2EDITOR_DB_NAME = $ENV{'EQ2EDITOR_DB_NAME'};
+my $EQ2EDITOR_DB_USER = $ENV{'EQ2EDITOR_DB_USER'};
+my $EQ2EDITOR_DB_HOST = $ENV{'EQ2EDITOR_DB_HOST'};
+my $EQ2EDITOR_DB_PASSWORD = $ENV{'EQ2EDITOR_DB_PASSWORD'};
+my $EQ2EDITOR_ADMIN_PASSWORD = $ENV{'EQ2EDITOR_ADMIN_PASSWORD'};
+my $EQ2EDITOR_DB_PKG = $ENV{'EQ2EDITOR_DB_PKG'};
+my $EQ2EDITOR_DB_FILE = $ENV{'EQ2EDITOR_DB_FILE'};
+
 use strict;
 use warnings;
 use File::Copy;
@@ -119,6 +127,38 @@ modify_ini_file('/eq2emu/eq2emu/server/world_db.ini.example', '/eq2emu/eq2emu/se
 
 my $res = copy_file_if_not_exists("/eq2emu/eq2emu/server/log_config.xml.example", "/eq2emu/eq2emu/server/log_config.xml");
 
+
+if (-e "firstrun_dbeditor") {
+	print "firstrun_dbeditor file exists, skipping DB Editor instantiation.\n";
+}
+else {
+	qx{cp -rf /eq2emu/eq2emu-editor/eq2db2 /eq2emu/eq2emu-shared-editor/};
+	qx{touch "/eq2emu/firstrun_dbeditor"};
+
+	qx{rm /eq2emu/eq2edit_startup.sql};
+	my $tables = "CREATE DATABASE IF NOT EXISTS " . $EQ2EDITOR_DB_NAME . ";\n";
+	my $users = 'CREATE USER IF NOT EXISTS \'' . $EQ2EDITOR_DB_USER . '\'@\'%\' IDENTIFIED BY \'' . $EQ2EDITOR_DB_PASSWORD . "';\n";
+	my $grantdbedit = "GRANT ALL PRIVILEGES ON " . $EQ2EDITOR_DB_NAME . '.* TO \'' . $EQ2EDITOR_DB_USER . '\'@\'%\' with grant option;' . "\n";
+	my $grantdbedit2 = "GRANT ALL PRIVILEGES ON " . $MYSQL_DATABASE . '.* TO \'' . $EQ2EDITOR_DB_USER . '\'@\'%\' with grant option;' . "\n";
+	open(my $fh, '>', "eq2edit_startup.sql") or die "Could not open file 'eq2edit_startup.sql'";
+	print $fh $tables;
+	print $fh $users;
+	print $fh $grantdbedit;
+	print $fh $grantdbedit2;
+	close $fh;
+	qx{mysql -uroot -hmysql -p"$MYSQL_ROOT_PASSWORD" < eq2edit_startup.sql};
+	
+	qx{sed -i 's/<dbhost>/$EQ2EDITOR_DB_HOST/g' /eq2emu/eq2emu-shared-editor/eq2db2/common/config.php};
+	qx{sed -i 's/<dbuser>/$EQ2EDITOR_DB_USER/g' /eq2emu/eq2emu-shared-editor/eq2db2/common/config.php};
+	qx{sed -i 's/<dbpassword>/$EQ2EDITOR_DB_PASSWORD/g' /eq2emu/eq2emu-shared-editor/eq2db2/common/config.php};
+	qx{sed -i 's/<dbname>/$EQ2EDITOR_DB_NAME/g' /eq2emu/eq2emu-shared-editor/eq2db2/common/config.php};
+	
+	qx{wget "$EQ2EDITOR_DB_PKG"};
+	
+	qx{mysql -u"$EQ2EDITOR_DB_USER" -hmysql -p"$EQ2EDITOR_DB_PASSWORD" "$EQ2EDITOR_DB_NAME" -e"source $EQ2EDITOR_DB_FILE;"};
+	qx{mysql -u"$EQ2EDITOR_DB_USER" -h"$EQ2EDITOR_DB_HOST" -p"$EQ2EDITOR_DB_PASSWORD" "$EQ2EDITOR_DB_NAME" -e"insert into users set username='admin',displayname='admin',password=md5('$EQ2EDITOR_ADMIN_PASSWORD'),role=4063;"};
+	qx{mysql -u"$EQ2EDITOR_DB_USER" -h"$EQ2EDITOR_DB_HOST" -p"$EQ2EDITOR_DB_PASSWORD" "$EQ2EDITOR_DB_NAME" -e"insert into datasources set id=1,db_display_name='Docker Test Server',db_name='$MYSQL_DATABASE',db_host='$MYSQL_HOST',db_user='$MYSQL_USER',db_password='$MYSQL_PASSWORD',db_description='Main DB',db_world_id=1,is_active=1;"};
+}
 
 if (-e "startup.sql") {
 	print "startup.sql file exists, skipping Dawn Web instantiation.\n";

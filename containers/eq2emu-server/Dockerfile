@@ -52,6 +52,14 @@ ENV EQ2WORLD_WEB_PASSWORD="<template>"
 ENV EQ2LOGIN_WEB_ADMIN="webadmin"
 ENV EQ2LOGIN_WEB_PASSWORD="<template>"
 
+ENV EQ2EDITOR_DB_PKG="https://raw.githubusercontent.com/emagi/eq2emu-editor/main/eq2editor.sql"
+ENV EQ2EDITOR_DB_FILE="eq2editor.sql"
+ENV EQ2EDITOR_DB_HOST="mysql"
+ENV EQ2EDITOR_DB_USER="eq2editor"
+ENV EQ2EDITOR_DB_PASSWORD="<template>"
+ENV EQ2EDITOR_DB_NAME="eq2editor"
+ENV EQ2EDITOR_ADMIN_PASSWORD="<template>"
+
 ENV EQ2DAWN_AUTORESTART_SERVER="1"
 
 ###########################################################
@@ -75,7 +83,7 @@ ENV FMT_GIT="https://github.com/fmtlib/fmt.git"
 ENV EQ2SOURCE_GIT="https://github.com/emagi/eq2emu.git"
 ENV EQ2CONTENT_GIT="https://github.com/emagi/eq2emu-content.git"
 ENV EQ2MAPS_GIT="https://github.com/emagi/eq2emu-maps.git"
-ENV EQ2DB_GIT="https://github.com/devn00b/EQ2EMu-DatabaseEditor.git"
+ENV EQ2DB_GIT="https://github.com/emagi/eq2emu-editor.git"
 ENV EQ2DAWN_GIT="https://github.com/emagi/eq2emu_dawnserver.git"
 
 
