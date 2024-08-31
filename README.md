@@ -17,6 +17,7 @@
    git clone https://github.com/emagi/eq2emu-docker.git
    ```
 2. Use the .env.example file in the base directory to create a .env file and update all _PASSWORD fields with <template> with a password surrounded by quotes, eg. "custompassword"
+	- Windows Users can use eq2emu.bat to be prompted for password fields and start, stop, down(remove) the eq2emu-docker services.  Skip step 3 and 4 if using eq2emu.bat to start.
 3. Use command prompt to open up the eq2emu-docker directory with docker-compose.yaml
 4. Issue 'docker compose up'
 5. A number of images will download to make the full server, this can take some time depending on your connection.
