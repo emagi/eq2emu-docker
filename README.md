@@ -25,4 +25,4 @@
 7. Use your compatible EverQuest 2 client to login by updating eq2_default.ini to us cl_ls_address 127.0.0.1
 
 ## Additional Notes
-http://127.0.0.1/eq2db2 will allow access to the EQ2EMu DB Editor, default user is 'admin' with the password EQ2EDITOR_ADMIN_PASSWORD set in the .env file.
+http://127.0.0.1/eq2db will allow access to the EQ2EMu DB Editor, default user is 'admin' with the password EQ2EDITOR_ADMIN_PASSWORD set in the .env file.
