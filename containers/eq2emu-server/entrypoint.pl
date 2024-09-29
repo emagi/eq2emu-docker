@@ -132,7 +132,7 @@ if (-e "firstrun_dbeditor") {
 	print "firstrun_dbeditor file exists, skipping DB Editor instantiation.\n";
 }
 else {
-	qx{cp -rf /eq2emu/eq2emu-editor/eq2db2 /eq2emu/eq2emu-shared-editor/};
+	qx{cp -rf /eq2emu/eq2emu-editor/eq2db /eq2emu/eq2emu-shared-editor/};
 	qx{touch "/eq2emu/firstrun_dbeditor"};
 
 	qx{rm /eq2emu/eq2edit_startup.sql};
@@ -147,11 +147,14 @@ else {
 	print $fh $grantdbedit2;
 	close $fh;
 	qx{mysql -uroot -hmysql -p"$MYSQL_ROOT_PASSWORD" < eq2edit_startup.sql};
-	
-	qx{sed -i 's/<dbhost>/$EQ2EDITOR_DB_HOST/g' /eq2emu/eq2emu-shared-editor/eq2db2/common/config.php};
-	qx{sed -i 's/<dbuser>/$EQ2EDITOR_DB_USER/g' /eq2emu/eq2emu-shared-editor/eq2db2/common/config.php};
-	qx{sed -i 's/<dbpassword>/$EQ2EDITOR_DB_PASSWORD/g' /eq2emu/eq2emu-shared-editor/eq2db2/common/config.php};
-	qx{sed -i 's/<dbname>/$EQ2EDITOR_DB_NAME/g' /eq2emu/eq2emu-shared-editor/eq2db2/common/config.php};
+	my $env_params = {
+    'DB_HOST'     => $EQ2EDITOR_DB_HOST,
+    'DB_PORT'     => "3306",
+    'DB_USER'     => $EQ2EDITOR_DB_USER,
+    'DB_PASS' => $EQ2EDITOR_DB_PASSWORD,
+    'DB_NAME' => $EQ2EDITOR_DB_NAME
+	};
+	modify_ini_file('/eq2emu/eq2emu-shared-editor/eq2db/.env.example', '/eq2emu/eq2emu-shared-editor/eq2db/.env', 'Database', $env_params);
 	
 	qx{wget "$EQ2EDITOR_DB_PKG"};
 	
