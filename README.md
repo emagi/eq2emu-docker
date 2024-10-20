@@ -26,3 +26,10 @@
 
 ## Additional Notes
 http://127.0.0.1/eq2db will allow access to the EQ2EMu DB Editor, default user is 'admin' with the password EQ2EDITOR_ADMIN_PASSWORD set in the .env file.
+
+If you do not wish to override existing database installations, you need to create an install directory in eq2emu-docker:
+- File: first_install - skips login and world database creation in containers/eq2emu-server/entrypoint.pl
+- File: dawn_install - skips dawn and login/world key/certificate creation for web polling/access.  Skips creating dawn database.
+- File: firstrun_dbeditor - skips eq2db editor database creation and .env file configuration.
+
+These files will auto-create after running the specified tasks, should the files not exist.
