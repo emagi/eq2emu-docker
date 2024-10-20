@@ -64,6 +64,7 @@ services:
     image: emagieq2/eq2emu-server:latest
     volumes:
       - ./certs:/eq2emu/certs
+      - ./install:/eq2emu/install
       - ./eq2emu-editor:/eq2emu/eq2emu-shared-editor
       - /eq2emu/eq2emu/server
     depends_on:

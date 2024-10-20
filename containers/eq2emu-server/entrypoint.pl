@@ -52,6 +52,10 @@ my $EQ2EDITOR_ADMIN_PASSWORD = $ENV{'EQ2EDITOR_ADMIN_PASSWORD'};
 my $EQ2EDITOR_DB_PKG = $ENV{'EQ2EDITOR_DB_PKG'};
 my $EQ2EDITOR_DB_FILE = $ENV{'EQ2EDITOR_DB_FILE'};
 
+my $SERVER_INSTALL_FILE = "/eq2emu/install/first_install";
+my $DAWN_INSTALL_FILE = "/eq2emu/install/dawn_install";
+my $DBEDITOR_INSTALL_FILE = "/eq2emu/install/firstrun_dbeditor";
+
 use strict;
 use warnings;
 use File::Copy;
@@ -128,12 +132,12 @@ modify_ini_file('/eq2emu/eq2emu/server/world_db.ini.example', '/eq2emu/eq2emu/se
 my $res = copy_file_if_not_exists("/eq2emu/eq2emu/server/log_config.xml.example", "/eq2emu/eq2emu/server/log_config.xml");
 
 
-if (-e "firstrun_dbeditor") {
+if (-e $DBEDITOR_INSTALL_FILE) {
 	print "firstrun_dbeditor file exists, skipping DB Editor instantiation.\n";
 }
 else {
 	qx{cp -rf /eq2emu/eq2emu-editor/eq2db /eq2emu/eq2emu-shared-editor/};
-	qx{touch "/eq2emu/firstrun_dbeditor"};
+	qx{touch "$DBEDITOR_INSTALL_FILE"};
 
 	qx{rm /eq2emu/eq2edit_startup.sql};
 	my $tables = "CREATE DATABASE IF NOT EXISTS " . $EQ2EDITOR_DB_NAME . ";\n";
@@ -163,7 +167,7 @@ else {
 	qx{mysql -u"$EQ2EDITOR_DB_USER" -h"$EQ2EDITOR_DB_HOST" -p"$EQ2EDITOR_DB_PASSWORD" "$EQ2EDITOR_DB_NAME" -e"insert into datasources set id=1,db_display_name='Docker Test Server',db_name='$MYSQL_DATABASE',db_host='$MYSQL_HOST',db_user='$MYSQL_USER',db_password='$MYSQL_PASSWORD',db_description='Main DB',db_world_id=1,is_active=1;"};
 }
 
-if (-e "startup.sql") {
+if (-e $DAWN_INSTALL_FILE) {
 	print "startup.sql file exists, skipping Dawn Web instantiation.\n";
 }
 else {
@@ -196,6 +200,7 @@ else {
 		print $fh $web_table;
 		close $fh;
 		qx{mysql -uroot -hmysql -p"$MYSQL_ROOT_PASSWORD" < startup.sql};
+		qx{touch "$DAWN_INSTALL_FILE"};
 }
 my @output = `/usr/bin/node /eq2emu/eq2emu_dawnserver/generateUserQuery.js --username admin --password \"$EQ2DAWN_ADMIN_PASSWORD\" --role admin > dawn.sql`;
 qx{bash -x /eq2emu/install_web.sh};
@@ -208,6 +213,10 @@ qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu_dawnserver/dawn_config.json.exam
 qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu_dawnserver/dawn_config.json /eq2emu/eq2emu_dawnserver/dawn_config.json .mysql.user "$EQ2DAWN_DB_USER"};
 qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu_dawnserver/dawn_config.json /eq2emu/eq2emu_dawnserver/dawn_config.json .mysql.host "$EQ2DAWN_DB_HOST"};
 qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu_dawnserver/dawn_config.json /eq2emu/eq2emu_dawnserver/dawn_config.json .mysql.database "$EQ2DAWN_DB_NAME"};
+qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu_dawnserver/dawn_config.json /eq2emu/eq2emu_dawnserver/dawn_config.json .worlddb.password "$MYSQL_PASSWORD"};
+qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu_dawnserver/dawn_config.json /eq2emu/eq2emu_dawnserver/dawn_config.json .worlddb.user "$MYSQL_USER"};
+qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu_dawnserver/dawn_config.json /eq2emu/eq2emu_dawnserver/dawn_config.json .worlddb.host "$MYSQL_HOST"};
+qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu_dawnserver/dawn_config.json /eq2emu/eq2emu_dawnserver/dawn_config.json .worlddb.database "$MYSQL_DATABASE"};
 qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu_dawnserver/dawn_config.json /eq2emu/eq2emu_dawnserver/dawn_config.json .http.port "$WEB_SERVER_PORT"};
 qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu_dawnserver/dawn_config.json /eq2emu/eq2emu_dawnserver/dawn_config.json .http.auto_restart "$EQ2DAWN_AUTORESTART_SERVER"};
 qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu_dawnserver/dawn_config.json /eq2emu/eq2emu_dawnserver/dawn_config.json .http.server_key "$WEB_KEYFILE"};
@@ -245,7 +254,7 @@ qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu/server/server_config.json /eq2em
 
 print "# Server Starting Up... visit https://$IP_ADDRESS:$WEB_SERVER_PORT and use login credentials user: admin password: $EQ2DAWN_ADMIN_PASSWORD to establish when login and world server are online.\n";
 
-if (-e "first_install") {
+if (-e $SERVER_INSTALL_FILE) {
 	print "First install file exists, skipping DB instantiation.\n";
 }
 else {
@@ -272,7 +281,7 @@ else {
 	qx{mysql -u"$MYSQL_USER" -hmysql -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" < "$EQ2WORLD_DB_SQL"};
 	
 	qx{mysql -u"$MYSQL_USER" -hmysql -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e"insert into web_users set username='$EQ2WORLD_WEB_ADMIN',passwd=sha2('$EQ2WORLD_WEB_PASSWORD',512);"};
-	qx{echo "0" > first_install}
+	qx{echo "0" > $SERVER_INSTALL_FILE}
 }
 
 qx{rm "/eq2emu/server_loading"};
