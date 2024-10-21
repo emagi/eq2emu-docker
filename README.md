@@ -33,3 +33,7 @@ If you do not wish to override existing database installations, you need to crea
 - File: firstrun_dbeditor - skips eq2db editor database creation and .env file configuration.
 
 These files will auto-create after running the specified tasks, should the files not exist.
+
+## Troubleshooting
+- If after updating the docker image, the EQ2Dawn Web Interface reports offline for login and world, but the PIDs are greater than 0 in the dashboard.
+Delete the eq2emu-docker/install/dawn_install file, then docker compose down, docker compose up to create new certificates between Dawn and Login/World.
