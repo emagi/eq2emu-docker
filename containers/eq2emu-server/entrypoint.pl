@@ -137,6 +137,19 @@ if (-e $DBEDITOR_INSTALL_FILE) {
 }
 else {
 	qx{cp -rf /eq2emu/eq2emu-editor/eq2db /eq2emu/eq2emu-shared-editor/};
+	my $adminDir = '/eq2emu/eq2emu-shared-editor/eq2db_admin';
+	my $idxFile = "$adminDir/index.php";
+
+	# Create the directory if it doesn't exist
+	qx{mkdir -p "$adminDir"};
+
+	# Download only if the file doesn't exist
+	unless (-e $idxFile) {
+		qx{wget -q -O "$idxFile" https://www.adminer.org/latest.php};
+		print "Downloaded Adminer to $idxFile\n";
+	} else {
+		print "File already exists at $idxFile, skipping download.\n";
+	}
 	qx{touch "$DBEDITOR_INSTALL_FILE"};
 
 	qx{rm /eq2emu/eq2edit_startup.sql};
@@ -163,7 +176,7 @@ else {
 	qx{wget "$EQ2EDITOR_DB_PKG"};
 	
 	qx{mysql -u"$EQ2EDITOR_DB_USER" -hmysql -p"$EQ2EDITOR_DB_PASSWORD" "$EQ2EDITOR_DB_NAME" -e"source $EQ2EDITOR_DB_FILE;"};
-	qx{mysql -u"$EQ2EDITOR_DB_USER" -h"$EQ2EDITOR_DB_HOST" -p"$EQ2EDITOR_DB_PASSWORD" "$EQ2EDITOR_DB_NAME" -e"insert into users set username='admin',displayname='admin',password=md5('$EQ2EDITOR_ADMIN_PASSWORD'),role=4063;"};
+	qx{mysql -u"$EQ2EDITOR_DB_USER" -h"$EQ2EDITOR_DB_HOST" -p"$EQ2EDITOR_DB_PASSWORD" "$EQ2EDITOR_DB_NAME" -e"insert into users set username='admin',displayname='admin',password=md5('$EQ2EDITOR_ADMIN_PASSWORD'),role=53215;"};
 	qx{mysql -u"$EQ2EDITOR_DB_USER" -h"$EQ2EDITOR_DB_HOST" -p"$EQ2EDITOR_DB_PASSWORD" "$EQ2EDITOR_DB_NAME" -e"insert into datasources set id=1,db_display_name='Docker Test Server',db_name='$MYSQL_DATABASE',db_host='$MYSQL_HOST',db_user='$MYSQL_USER',db_password='$MYSQL_PASSWORD',db_description='Main DB',db_world_id=1,is_active=1;"};
 }
 
