@@ -20,8 +20,29 @@ my $MYSQL_USER = $ENV{'MYSQL_USER'};
 my $MYSQL_DATABASE = $ENV{'MYSQL_DATABASE'};
 my $MYSQL_HOST = $ENV{'MYSQL_HOST'};
 
+my $HOST_LOGIN = $ENV{'HOST_LOGIN'};
 
 my $IP_ADDRESS = $ENV{'IP_ADDRESS'};
+
+my $LISTEN_PORT_ADDRESS = $ENV{'LISTEN_PORT_ADDRESS'};
+
+my $ACTUAL_ADDRESS = $IP_ADDRESS;
+if ( $ACTUAL_ADDRESS eq '0.0.0.0' ) {
+    $ACTUAL_ADDRESS = $LISTEN_PORT_ADDRESS;
+}
+
+my $WEB_LISTEN_ADDRESS = $ACTUAL_ADDRESS;
+
+if($WEB_LISTEN_ADDRESS ne '127.0.0.1') {
+	$WEB_LISTEN_ADDRESS = "0.0.0.0";
+}
+
+my $dawnLoginUrl = "https://$ACTUAL_ADDRESS:9101";
+my $dawnWorldUrl = "https://$ACTUAL_ADDRESS:9002";
+
+my $EQ2WORLD_LOGIN_IP = $ENV{'EQ2WORLD_LOGIN_IP'};
+my $EQ2WORLD_LOGIN_PORT = $ENV{'EQ2WORLD_LOGIN_PORT'};
+
 my $WORLD_WEBPORT = $ENV{'WORLD_WEBPORT'};
 my $LOGIN_WEBPORT = $ENV{'LOGIN_WEBPORT'};
 my $WEB_CERTFILE = $ENV{'WEB_CERTFILE'};
@@ -111,14 +132,16 @@ print "# Setting timezone\n";
 print `sudo rm /etc/localtime`;
 print `sudo ln -s /usr/share/zoneinfo/\$TZ /etc/localtime`;
 
-my $login_params = {
-    'host'     => $EQ2LS_DB_HOST,
-    'user'     => $EQ2LS_DB_USER,
-    'password' => $EQ2LS_DB_PASSWORD,
-    'database' => $EQ2LS_DB_NAME
-};
+if($HOST_LOGIN eq "1") {
+    my $login_params = {
+        'host'     => $EQ2LS_DB_HOST,
+        'user'     => $EQ2LS_DB_USER,
+        'password' => $EQ2LS_DB_PASSWORD,
+        'database' => $EQ2LS_DB_NAME
+    };
 
-modify_ini_file('/eq2emu/eq2emu/server/login_db.ini.example', '/eq2emu/eq2emu/server/login_db.ini', 'Database', $login_params);
+    modify_ini_file('/eq2emu/eq2emu/server/login_db.ini.example', '/eq2emu/eq2emu/server/login_db.ini', 'Database', $login_params);
+}
 
 my $world_params = {
     'host'     => $MYSQL_HOST,
@@ -193,7 +216,7 @@ else {
 		print "$mkcertinstall";
 		my $mkcertroot = qx{mkcert -CAROOT};
 		print "$mkcertroot";
-		my $mkcertfile = qx{mkcert webserver localhost $IP_ADDRESS ::1};
+		my $mkcertfile = qx{mkcert webserver localhost $ACTUAL_ADDRESS ::1};
 		print "$mkcertfile";
 		qx{mv -f webserver+3.pem /eq2emu/certs/webcert.pem};
 		qx{mv -f webserver+3-key.pem /eq2emu/certs/webkey.pem};
@@ -235,8 +258,16 @@ qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu_dawnserver/dawn_config.json /eq2
 qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu_dawnserver/dawn_config.json /eq2emu/eq2emu_dawnserver/dawn_config.json .http.server_key "$WEB_KEYFILE"};
 qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu_dawnserver/dawn_config.json /eq2emu/eq2emu_dawnserver/dawn_config.json .http.server_cert "$WEB_CERTFILE"};
 qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu_dawnserver/dawn_config.json /eq2emu/eq2emu_dawnserver/dawn_config.json .http.server_ca "$WEB_CAFILE"};
-qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu_dawnserver/dawn_config.json /eq2emu/eq2emu_dawnserver/dawn_config.json .polling.login_admin "$EQ2LOGIN_WEB_ADMIN"};
-qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu_dawnserver/dawn_config.json /eq2emu/eq2emu_dawnserver/dawn_config.json .polling.login_password "$EQ2LOGIN_WEB_PASSWORD"};
+
+if($HOST_LOGIN eq "1") {
+    qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu_dawnserver/dawn_config.json /eq2emu/eq2emu_dawnserver/dawn_config.json .polling.login_address "$dawnLoginUrl"};
+    qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu_dawnserver/dawn_config.json /eq2emu/eq2emu_dawnserver/dawn_config.json .polling.login_admin "$EQ2LOGIN_WEB_ADMIN"};
+    qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu_dawnserver/dawn_config.json /eq2emu/eq2emu_dawnserver/dawn_config.json .polling.login_password "$EQ2LOGIN_WEB_PASSWORD"};
+}
+else {
+    qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu_dawnserver/dawn_config.json /eq2emu/eq2emu_dawnserver/dawn_config.json .polling.disable_login "1"};
+}
+qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu_dawnserver/dawn_config.json /eq2emu/eq2emu_dawnserver/dawn_config.json .polling.world_address "$dawnWorldUrl"};
 qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu_dawnserver/dawn_config.json /eq2emu/eq2emu_dawnserver/dawn_config.json .polling.world_admin "$EQ2WORLD_WEB_ADMIN"};
 qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu_dawnserver/dawn_config.json /eq2emu/eq2emu_dawnserver/dawn_config.json .polling.world_password "$EQ2WORLD_WEB_PASSWORD"};
 
@@ -245,27 +276,27 @@ qx{screen -d -m bash -x start_web.sh};
 
 
 print "# Configuring Login and World Server...\n";
-qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu/server/server_config.json.example /eq2emu/eq2emu/server/server_config.json .LoginServer.loginserver "$IP_ADDRESS"};
+qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu/server/server_config.json.example /eq2emu/eq2emu/server/server_config.json .LoginServer.loginserver "$EQ2WORLD_LOGIN_IP"};
 qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu/server/server_config.json /eq2emu/eq2emu/server/server_config.json .LoginServer.worldaddress "$IP_ADDRESS"};
 qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu/server/server_config.json /eq2emu/eq2emu/server/server_config.json .LoginServer.internalworldaddress "$IP_ADDRESS"};
-qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu/server/server_config.json /eq2emu/eq2emu/server/server_config.json .LoginServer.loginport "$LOGIN_CLIENT_PORT"};
+qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu/server/server_config.json /eq2emu/eq2emu/server/server_config.json .LoginServer.loginport "$EQ2WORLD_LOGIN_PORT"};
 qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu/server/server_config.json /eq2emu/eq2emu/server/server_config.json .LoginServer.worldname "$WORLD_NAME"};
 qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu/server/server_config.json /eq2emu/eq2emu/server/server_config.json .LoginServer.account "$WORLD_ACCOUNT_NAME"};
 qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu/server/server_config.json /eq2emu/eq2emu/server/server_config.json .LoginServer.password "$WORLD_ACCOUNT_PASSWORD"};
 
 qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu/server/server_config.json /eq2emu/eq2emu/server/server_config.json .LoginServer.worldport "$WORLD_CLIENT_PORT"};
-qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu/server/server_config.json /eq2emu/eq2emu/server/server_config.json .WorldServer.webaddress "$IP_ADDRESS"};
+qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu/server/server_config.json /eq2emu/eq2emu/server/server_config.json .WorldServer.webaddress "$WEB_LISTEN_ADDRESS"};
 qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu/server/server_config.json /eq2emu/eq2emu/server/server_config.json .WorldServer.webport "$WORLD_WEBPORT"};
 qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu/server/server_config.json /eq2emu/eq2emu/server/server_config.json .WorldServer.webcertfile "$WEB_CERTFILE"};
 qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu/server/server_config.json /eq2emu/eq2emu/server/server_config.json .WorldServer.webkeyfile "$WEB_KEYFILE"};
 
 qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu/server/server_config.json /eq2emu/eq2emu/server/server_config.json .LoginConfig.ServerPort "$LOGIN_CLIENT_PORT"};
-qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu/server/server_config.json /eq2emu/eq2emu/server/server_config.json .LoginConfig.webloginaddress "$IP_ADDRESS"};
+qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu/server/server_config.json /eq2emu/eq2emu/server/server_config.json .LoginConfig.webloginaddress "$WEB_LISTEN_ADDRESS"};
 qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu/server/server_config.json /eq2emu/eq2emu/server/server_config.json .LoginConfig.webloginport "$LOGIN_WEBPORT"};
 qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu/server/server_config.json /eq2emu/eq2emu/server/server_config.json .LoginConfig.webcertfile "$WEB_CERTFILE"};
 qx{bash -x /eq2emu/json_write.sh /eq2emu/eq2emu/server/server_config.json /eq2emu/eq2emu/server/server_config.json .LoginConfig.webkeyfile "$WEB_KEYFILE"};
 
-print "# Server Starting Up... visit https://$IP_ADDRESS:$WEB_SERVER_PORT and use login credentials user: admin password: $EQ2DAWN_ADMIN_PASSWORD to establish when login and world server are online.\n";
+print "# Server Starting Up... visit https://$ACTUAL_ADDRESS:$WEB_SERVER_PORT and use login credentials user: admin password: $EQ2DAWN_ADMIN_PASSWORD to establish when login and world server are online.\n";
 
 if (-e $SERVER_INSTALL_FILE) {
 	print "First install file exists, skipping DB instantiation.\n";
@@ -278,15 +309,17 @@ else {
 	my $EQ2LOGIN_DB_FILE = $ENV{'EQ2LOGIN_DB_FILE'};
 	my $EQ2WORLD_DB_SQL = $ENV{'EQ2WORLD_DB_SQL'};
 	my $EQ2LOGIN_DB_SQL = $ENV{'EQ2LOGIN_DB_SQL'};
+	
+if($HOST_LOGIN eq "1") {
 	qx{rm "$EQ2LOGIN_DB_FILE"};
 	qx{rm "$EQ2LOGIN_DB_SQL"};
 	qx{wget "$EQ2LOGIN_DB_PKG"};
 	qx{tar -xzvf $EQ2LOGIN_DB_FILE};
 	qx{mysql -u"$EQ2LS_DB_USER" -h"$EQ2LS_DB_HOST" -p"$EQ2LS_DB_PASSWORD" "$EQ2LS_DB_NAME" < "$EQ2LOGIN_DB_SQL"};
-	
 	qx{mysql -u"$EQ2LS_DB_USER" -h"$EQ2LS_DB_HOST" -p"$EQ2LS_DB_PASSWORD" "$EQ2LS_DB_NAME" -e"insert into web_users set username='$EQ2LOGIN_WEB_ADMIN',passwd=sha2('$EQ2LOGIN_WEB_PASSWORD',512);"};
 	qx{mysql -u"$EQ2LS_DB_USER" -h"$EQ2LS_DB_HOST" -p"$EQ2LS_DB_PASSWORD" "$EQ2LS_DB_NAME" -e"insert into login_worldservers set note='', description='', name='$WORLD_NAME', account='$WORLD_ACCOUNT_NAME',password=sha2('$WORLD_ACCOUNT_PASSWORD',512);"};
-	
+}
+
 	qx{rm "$EQ2WORLD_DB_FILE"};
 	qx{rm "$EQ2WORLD_DB_SQL"};
 	qx{wget "$EQ2WORLD_DB_PKG"};
@@ -299,4 +332,4 @@ else {
 
 qx{rm "/eq2emu/server_loading"};
 
-print "# Server Initial Load Up Complete... visit https://$IP_ADDRESS:$WEB_SERVER_PORT and use login credentials user: admin password: $EQ2DAWN_ADMIN_PASSWORD to establish when login and world server are online.\n";
+print "# Server Initial Load Up Complete... visit https://$ACTUAL_ADDRESS:$WEB_SERVER_PORT and use login credentials user: admin password: $EQ2DAWN_ADMIN_PASSWORD to establish when login and world server are online.\n";

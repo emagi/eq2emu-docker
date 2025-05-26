@@ -20,6 +20,7 @@ if [ ! -e $CONTAINER_ALREADY_STARTED ]; then
 	git clone ${EQ2MAPS_GIT}
 	git clone ${EQ2DB_GIT}
 	git clone ${EQ2DAWN_GIT}
+	mkdir -p /eq2emu/eq2emu/server
 	cd /eq2emu/eq2emu/source/LoginServer
 	git pull
 	make clean
@@ -32,6 +33,7 @@ if [ ! -e $CONTAINER_ALREADY_STARTED ]; then
 	cp eq2world /eq2emu/eq2emu/server/
 	cd /eq2emu/eq2emu-content
 	cp -r ItemScripts Quests RegionScripts SpawnScripts Spells ZoneScripts /eq2emu/eq2emu/server/
+	cd /eq2emu/eq2emu/server/
 	sudo chmod -R 777 ItemScripts Quests RegionScripts SpawnScripts Spells ZoneScripts # allows eq2emu-editor container to write files
 	cd /eq2emu/eq2emu-maps
 	cp -r Maps Regions /eq2emu/eq2emu/server/

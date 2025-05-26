@@ -95,6 +95,12 @@ ENV IP_ADDRESS=127.0.0.1
 # This is what we will expose beyond the container for the login (default 9100), world (default 9001) and web ports (default 2424)
 ENV LISTEN_PORT_ADDRESS=0.0.0.0
 
+# This is what the World Server will use to connect to the login server
+ENV EQ2WORLD_LOGIN_IP=127.0.0.1
+ENV EQ2WORLD_LOGIN_PORT=9100
+
+ENV HOST_LOGIN=1
+
 ENV TZ="US/Central"
 
 ARG PUID=1000
