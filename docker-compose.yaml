@@ -123,6 +123,7 @@ services:
       - HOST_LOGIN:${HOST_LOGIN}
       - MKCERT_URL:${MKCERT_URL}
       - MKCERT_FILE:${MKCERT_FILE}
+      - GITHUB_TOKEN:${GITHUB_TOKEN}
       - TZ=${TZ:-US/Central}
     tty: true
     stdin_open: true
